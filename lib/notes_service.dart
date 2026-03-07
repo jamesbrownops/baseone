@@ -9,6 +9,7 @@ class Note {
   final String body;
   final int createdAtMs;
   final int updatedAtMs;
+  final bool pinned;
 
   const Note({
     required this.id,
@@ -16,6 +17,7 @@ class Note {
     required this.body,
     required this.createdAtMs,
     required this.updatedAtMs,
+    required this.pinned,
   });
 
   Note copyWith({
@@ -24,6 +26,7 @@ class Note {
     String? body,
     int? createdAtMs,
     int? updatedAtMs,
+    bool? pinned,
   }) {
     return Note(
       id: id ?? this.id,
@@ -31,6 +34,7 @@ class Note {
       body: body ?? this.body,
       createdAtMs: createdAtMs ?? this.createdAtMs,
       updatedAtMs: updatedAtMs ?? this.updatedAtMs,
+      pinned: pinned ?? this.pinned,
     );
   }
 
@@ -40,6 +44,7 @@ class Note {
         'body': body,
         'createdAtMs': createdAtMs,
         'updatedAtMs': updatedAtMs,
+        'pinned': pinned,
       };
 
   static Note fromMap(Map<String, dynamic> map) {
@@ -49,6 +54,7 @@ class Note {
       body: (map['body'] as String?) ?? '',
       createdAtMs: (map['createdAtMs'] as int?) ?? 0,
       updatedAtMs: (map['updatedAtMs'] as int?) ?? 0,
+      pinned: (map['pinned'] as bool?) ?? false,
     );
   }
 }
@@ -65,6 +71,7 @@ class NotesService {
       body: '',
       createdAtMs: now,
       updatedAtMs: now,
+      pinned: false,
     );
   }
 
@@ -82,7 +89,7 @@ class NotesService {
           .map((m) => Note.fromMap(m.cast<String, dynamic>()))
           .toList();
 
-      notes.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
+      _sortNotes(notes);
       return notes;
     } catch (_) {
       return [];
@@ -104,13 +111,22 @@ class NotesService {
     } else {
       copy.add(note);
     }
-    copy.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
+    _sortNotes(copy);
     return copy;
   }
 
   List<Note> deleteById(List<Note> notes, String id) {
     final copy = notes.where((n) => n.id != id).toList();
-    copy.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
+    _sortNotes(copy);
     return copy;
+  }
+
+  void _sortNotes(List<Note> notes) {
+    notes.sort((a, b) {
+      if (a.pinned != b.pinned) {
+        return a.pinned ? -1 : 1;
+      }
+      return b.updatedAtMs.compareTo(a.updatedAtMs);
+    });
   }
 }

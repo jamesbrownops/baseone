@@ -128,6 +128,23 @@ class _NotesPageState extends State<NotesPage> {
     await _service.saveAll(_notes);
   }
 
+  Future<void> _togglePinned(Note note) async {
+    final updated = note.copyWith(
+      pinned: !note.pinned,
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    setState(() {
+      _notes = _service.upsert(_notes, updated);
+
+      if (_selected?.id == note.id) {
+        _selected = updated;
+      }
+    });
+
+    await _service.saveAll(_notes);
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -153,7 +170,7 @@ class _NotesPageState extends State<NotesPage> {
       body: Row(
         children: [
           Container(
-            width: 320,
+            width: 340,
             decoration: const BoxDecoration(
               border: Border(right: BorderSide(color: Colors.grey)),
             ),
@@ -179,19 +196,41 @@ class _NotesPageState extends State<NotesPage> {
                     itemCount: filteredNotes.length,
                     itemBuilder: (context, index) {
                       final note = filteredNotes[index];
+                      final updatedTime =
+                          DateTime.fromMillisecondsSinceEpoch(note.updatedAtMs);
 
                       return ListTile(
+                        leading: IconButton(
+                          icon: Icon(
+                            note.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                            color: note.pinned ? Colors.deepPurple : Colors.grey,
+                          ),
+                          onPressed: () => _togglePinned(note),
+                        ),
                         title: Text(
                           note.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: Text(
-                          note.body.isEmpty
-                              ? "(empty note)"
-                              : note.body.split('\n').first,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              note.body.isEmpty
+                                  ? "(empty note)"
+                                  : note.body.split('\n').first,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Updated: ${updatedTime.toLocal()}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                         selected: _selected?.id == note.id,
                         trailing: IconButton(
